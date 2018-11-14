@@ -36,12 +36,12 @@ for ii=1:N_initial_left
         V_postion_y_left_initial(ii)=2;
     end
 end
-vehicle_position_initial=[V_postion_x_right_initial, V_postion_y_right_initial ;V_postion_x_left_initial,V_postion_y_left_initial];
+% vehicle_position_initial=[V_postion_x_right_initial, V_postion_y_right_initial ;V_postion_x_left_initial,V_postion_y_left_initial];
 
 % the new car came in with distribution of poisson 
 recy_time=6;
 %the car add to the direction right
-lambda_right=10;
+lambda_right=20;
 N_right_add=poissrnd(lambda_right);
 V_positon_x_right_add= Z*L_m*ones(N_right_add,1);
 V_positon_y_right_add= rand(N_right_add,1);
@@ -56,7 +56,7 @@ end
 
 
 %the car added to the direction left
-lambda_left=10;
+lambda_left=20;
 N_left_add=poissrnd(lambda_left);
 V_postion_x_left_add=6*Z*L_m*ones(N_left_add,1);
 V_postion_y_left_add =rand(N_left_add,1);
@@ -89,25 +89,39 @@ vehicle_position_delete=vehicle_position;
 delete_index=find(vehicle_position_delete(:,1)==0);
 vehicle_position_delete(delete_index,:)=[];
 
+%not each car has one task, it has probability to have task 
+task_proba=rand(length(vehicle_position_delete),1);
+vehicle_position_delete=[vehicle_position_delete,task_proba];
 
+for ii=1:length(vehicle_position_delete)
+    if vehicle_position_delete(ii,3)<=0.6
+        vehicle_position_delete(ii,3)=1;
+    else 
+        vehicle_position_delete(ii,3)=0;
+    end
+end    
+
+vehicle_position_task = vehicle_position_delete;
+delete_car_index=find(vehicle_position_task(:,3)==0);
+vehicle_position_task(delete_car_index,:)=[];
 
 % get the number of car right and left
 N_right=0; 
-for ii=1: length(vehicle_position_delete)
-    if (vehicle_position_delete(ii,2) == 6 ) |  (vehicle_position_delete(ii,2)==8 )
+for ii=1: length(vehicle_position_task)
+    if (vehicle_position_task(ii,2) == 6 ) |  (vehicle_position_task(ii,2)==8 )
         
         N_right =N_right+1;
     end
 end
-vehicle_position_delete_right = vehicle_position_delete(1:N_right,:);
+vehicle_position_delete_right = vehicle_position_task(1:N_right,:);
 
 N_left=0;
-for ii=1: length(vehicle_position_delete)
-    if (vehicle_position_delete(ii,2) == 2 ) |  (vehicle_position_delete(ii,2)==4 )
+for ii=1: length(vehicle_position_task)
+    if (vehicle_position_task(ii,2) == 2 ) |  (vehicle_position_task(ii,2)==4 )
         N_left =N_left+1;
     end
 end
-vehicle_position_delete_left = vehicle_position_delete(N_right+1:end,:);
+vehicle_position_delete_left = vehicle_position_task(N_right+1:end,:);
 
 % Driving Time 
 L_all_right=zeros(N_right,M);
@@ -133,40 +147,40 @@ for ii=1:N_left
 end
 L_all=[L_all_right ; L_all_left];    
 
-T_d_all = (zeros(length(vehicle_position_delete),M+1));
-for ii = 1:length(vehicle_position_delete)
+T_d_all = (zeros(length(vehicle_position_task),M+1));
+for ii = 1:length(vehicle_position_task)
     T_d_all(ii,2:end) = L_all(ii,:) ./ v_speed;
 end 
 
 %communication time 
-h_length= vehicle_position_delete(:,2);
-w_length=10*ones(length(vehicle_position_delete),1);
-d_t=zeros(length(vehicle_position_delete),1);
-r_c=zeros(length(vehicle_position_delete),1);
-dataSize = (100+200*rand(length(vehicle_position_delete),1));
+h_length= vehicle_position_task(:,2);
+w_length=10*ones(length(vehicle_position_task),1);
+d_t=zeros(length(vehicle_position_task),1);
+r_c=zeros(length(vehicle_position_task),1);
+dataSize = (100+200*rand(length(vehicle_position_task),1));
 
 d_t=sqrt(w_length.^2+h_length.^2);
 r_c= B_RSU* log2(1+(P_v *  (d_t.^(-2.5))  )/N_v);
 T_c= dataSize./r_c;
 
-T_c_all = zeros(length(vehicle_position_delete),M+1);
+T_c_all = zeros(length(vehicle_position_task),M+1);
 for ii = 2:M+1
     T_c_all(:,ii) = T_c;
 end
 
 % The computing time 
-c_i=0.5+rand(length(vehicle_position_delete),1);
-c_i_all = ones(length(vehicle_position_delete),M+1);
+c_i=0.5+rand(length(vehicle_position_task),1);
+c_i_all = ones(length(vehicle_position_task),M+1);
 for ii = 1:M+1
     c_i_all(:,ii) = c_i;
 end  
-T_max = (8+2*rand(length(vehicle_position_delete),1));
+T_max = (8+2*rand(length(vehicle_position_task),1));
 
 
 cvx_begin
     cvx_solver MOSEK
-    variable f_ij_all(length(vehicle_position_delete),M);
-    variable j_selection(length(vehicle_position_delete),M+1) binary;
+    variable f_ij_all(length(vehicle_position_task),M);
+    variable j_selection(length(vehicle_position_task),M+1) binary;
 %   variable j_selection(N,M+1) ;
     expression TT;
 
@@ -174,7 +188,7 @@ cvx_begin
     TT=(j_selection.*(T_d_all+T_c_all));
     TT(:,1)=TT(:,1)+j_selection(:,1).*(c_i_all(:,1) / c_car);
 
-    for ii=1:length(vehicle_position_delete)
+    for ii=1:length(vehicle_position_task)
         for jj=1:M
            TT(ii,jj+1)=TT(ii,jj+1)+ c_i_all(ii,jj+1)*quad_over_lin(j_selection(ii,jj+1),f_ij_all(ii,jj));
         end
@@ -184,13 +198,13 @@ cvx_begin
 
 subject to 
     
-    for ii = 1:length(vehicle_position_delete)
+    for ii = 1:length(vehicle_position_task)
         sum(j_selection(ii,:))==1;          %condition (8c)
     end
     
     sum(f_ij_all) <= F_limit;                 %condition (8d)
     
-    for ii=1:length(vehicle_position_delete)
+    for ii=1:length(vehicle_position_task)
         for jj=1:M
             f_ij_all(ii,jj)<=F_limit(jj)*j_selection(ii,jj+1);         %condition (8e)
             f_ij_all(ii,jj)>=0;
@@ -201,7 +215,7 @@ subject to
     
       sum(j_selection(:,2:end))<=buffer_number;        % each server can not connect more than 4 cars(buffer)
       
-      for ii= 1:length(vehicle_position_delete)
+      for ii= 1:length(vehicle_position_task)
           for jj= 1:M
               if L_all(ii,jj)<0
                   j_selection(ii,jj+1)==0;
@@ -209,7 +223,7 @@ subject to
           end
       end
       
-      for ii= 1:length(vehicle_position_delete)
+      for ii= 1:length(vehicle_position_task)
           for jj= 1:M
               if L_all(ii,jj)> 4*L_m
                   j_selection(ii,jj+1)==0;
@@ -222,7 +236,7 @@ cvx_end
 j_selection_matrix = int64(full(j_selection));
 f_ij_all_matrix=full(f_ij_all);
 
-for ii= 1:length(vehicle_position_delete)
+for ii= 1:length(vehicle_position_task)
     for jj =1:M
         if f_ij_all_matrix (ii,jj)< 0.001
             f_ij_all_matrix(ii,jj) = 0 ;
