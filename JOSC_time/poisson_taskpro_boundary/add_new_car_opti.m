@@ -70,16 +70,18 @@ vehicle_position_task([delete_car_index],:)=[];
 % get the number of car right and left
 N_right=0; 
 for ii=1: length(vehicle_position_task)
-    if (vehicle_position_task(ii,2) == 6 ) |  (vehicle_position_task(ii,2)==8 )
+    if (vehicle_position_task(ii,2) == 6 ) ||  (vehicle_position_task(ii,2)==8 )
         
         N_right =N_right+1;
     end
 end
 vehicle_position_delete_right = vehicle_position_task(1:N_right,:);
 
+
+
 N_left=0;
 for ii=1: length(vehicle_position_task)
-    if (vehicle_position_task(ii,2) == 2 ) |  (vehicle_position_task(ii,2)==4 )
+    if (vehicle_position_task(ii,2) == 2 ) ||  (vehicle_position_task(ii,2)==4 )
         N_left =N_left+1;
     end
 end
@@ -117,8 +119,8 @@ end
 %communication time 
 h_length= vehicle_position_task(:,2);
 w_length=10*ones(length(vehicle_position_task),1);
-d_t=zeros(length(vehicle_position_task),1);
-r_c=zeros(length(vehicle_position_task),1);
+% d_t=zeros(length(vehicle_position_task),1);
+% r_c=zeros(length(vehicle_position_task),1);
 dataSize = (100+200*rand(length(vehicle_position_task),1));
 
 d_t=sqrt(w_length.^2+h_length.^2);

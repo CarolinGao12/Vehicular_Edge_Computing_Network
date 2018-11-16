@@ -22,7 +22,7 @@ N_initial_left=randi([10,25]);
 [V_postion_x_right_initial,V_postion_y_right_initial,V_postion_x_left_initial,V_postion_y_left_initial]=initial_condition(Z,L_m,L_rd,N_initial_right,N_initial_left);
 
 mean_number =15;
-take_average=100;
+take_average=250;
 result_opti=zeros(mean_number,take_average);
 count_mean=zeros(mean_number,1);
 %add new car 
@@ -31,7 +31,8 @@ for jj=1:mean_number
             N_right_add=poissrnd(jj+10);
             N_left_add=poissrnd(jj+10);
             count_mean(jj)=jj+10;
-            result_opti(jj,t_a) = add_new_car_opti(Z,L_m,M,B_RSU,P_v,N_v,c_car,F_limit,buffer_number,N_right_add,N_left_add,V_postion_x_right_initial,V_postion_y_right_initial,V_postion_x_left_initial,V_postion_y_left_initial,v_speed,recy_time);
+            [result_opti(jj,t_a)] = add_new_car_opti(Z,L_m,M,B_RSU,P_v,N_v,c_car,F_limit,buffer_number,N_right_add,N_left_add,V_postion_x_right_initial,V_postion_y_right_initial,V_postion_x_left_initial,V_postion_y_left_initial,v_speed,recy_time);
+
        end
 end
  
@@ -40,7 +41,7 @@ result_opti_sum_average= result_opti_sum/take_average;
 
 sort_result_opti=sort(result_opti,2);
 
-result_opti_max=sort_result_opti(:,91:end);
+result_opti_max=sort_result_opti(:,241:end);
 result_opti_max_average=sum(result_opti_max,2)/10;
 
 result_opti_min=sort_result_opti(:,1:10);
